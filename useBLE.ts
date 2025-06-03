@@ -1,6 +1,6 @@
 /* eslint-disable no-bitwise */
 import { useMemo, useState } from "react";
-import { PermissionsAndroid, Platform } from "react-native";
+import { PermissionsAndroid, Platform, Alert } from "react-native";
 import {
   BleError,
   BleManager,
@@ -12,8 +12,8 @@ import * as ExpoDevice from "expo-device";
 
 import base64 from "react-native-base64";
 
-const HEART_RATE_UUID = "0000180d-0000-1000-8000-00805f9b34fb";
-const HEART_RATE_CHARACTERISTIC = "00002a37-0000-1000-8000-00805f9b34fb";
+const GENERIC_ACCESS_UUID = "00001800-0000-1000-8000-00805f9b34fb";
+const DEVICE_NAME_UUID = "00002a00-0000-1000-8000-00805f9b34fb";
 
 interface BluetoothLowEnergyApi {
   requestPermissions(): Promise<boolean>;
@@ -22,14 +22,15 @@ interface BluetoothLowEnergyApi {
   disconnectFromDevice: () => void;
   connectedDevice: Device | null;
   allDevices: Device[];
-  heartRate: number;
+  deviceName: string;
+  setAllDevices: (devices: Device[]) => void;
 }
 
 function useBLE(): BluetoothLowEnergyApi {
   const bleManager = useMemo(() => new BleManager(), []);
   const [allDevices, setAllDevices] = useState<Device[]>([]);
   const [connectedDevice, setConnectedDevice] = useState<Device | null>(null);
-  const [heartRate, setHeartRate] = useState<number>(0);
+  const [deviceName, setDeviceName] = useState<string | null>(null);
 
   const requestAndroid31Permissions = async () => {
     const bluetoothScanPermission = await PermissionsAndroid.request(
@@ -83,7 +84,7 @@ function useBLE(): BluetoothLowEnergyApi {
         return isAndroid31PermissionsGranted;
       }
     } else {
-      return true;
+      return true; //p.list
     }
   };
 
@@ -95,7 +96,7 @@ function useBLE(): BluetoothLowEnergyApi {
       if (error) {
         console.log(error);
       }
-      if (device && device.name?.includes("CorSense")) {
+      if (device?.name) {
         setAllDevices((prevState: Device[]) => {
           if (!isDuplicteDevice(prevState, device)) {
             return [...prevState, device];
@@ -109,11 +110,73 @@ function useBLE(): BluetoothLowEnergyApi {
     try {
       const deviceConnection = await bleManager.connectToDevice(device.id);
       setConnectedDevice(deviceConnection);
-      await deviceConnection.discoverAllServicesAndCharacteristics();
+
+      const discoveredDevice = await deviceConnection.discoverAllServicesAndCharacteristics();
+      // console.log("Discovered device:", discoveredDevice);
+
+      // const services = await discoveredDevice.services();
+      // console.log("Services:", services);
+
+      // for (const service of services) {
+      //   const characteristics = await discoveredDevice.characteristicsForService(service.uuid);
+      //   console.log(`Characteristics for service ${service.uuid}:`, characteristics);
+      // }
+
       bleManager.stopDeviceScan();
+      await readDeviceName(deviceConnection);
       startStreamingData(deviceConnection);
     } catch (e) {
       console.log("FAILED TO CONNECT", e);
+      Alert.alert(
+      "Pairing Failed",
+      "Could not connect to the device. Please try again.",
+      [{ text: "OK" }]
+    );
+    }
+  };
+
+  const readDeviceName = async (device: Device) => {
+    try {
+      const characteristic = await device.readCharacteristicForService(
+        GENERIC_ACCESS_UUID,
+        DEVICE_NAME_UUID
+      );
+      const name = characteristic.value ? base64.decode(characteristic.value) : "";
+      setDeviceName(name);
+      console.log("Read device name:", name);
+    } catch (e) {
+      console.log("Failed to read device name", e);
+    }
+  };
+
+  // for reading characteristic streaming updates
+  const onStringCharacteristicUpdate = (
+    error: BleError | null,
+    characteristic: Characteristic | null
+  ) => {
+    if (error) {
+      console.log(error);
+      return;
+    } else if (!characteristic?.value) {
+      console.log("No Data was received");
+      return;
+    }
+
+    // Decode base64 to string
+    const stringValue = base64.decode(characteristic.value);
+    console.log("String characteristic value:", stringValue);
+    setDeviceName(stringValue);
+  };
+
+  const startStreamingData = async (device: Device) => {
+    if (device) {
+      device.monitorCharacteristicForService(
+        GENERIC_ACCESS_UUID,
+        DEVICE_NAME_UUID,
+        onStringCharacteristicUpdate
+      );
+    } else {
+      console.log("No Device Connected");
     }
   };
 
@@ -121,47 +184,7 @@ function useBLE(): BluetoothLowEnergyApi {
     if (connectedDevice) {
       bleManager.cancelDeviceConnection(connectedDevice.id);
       setConnectedDevice(null);
-      setHeartRate(0);
-    }
-  };
-
-  const onHeartRateUpdate = (
-    error: BleError | null,
-    characteristic: Characteristic | null
-  ) => {
-    if (error) {
-      console.log(error);
-      return -1;
-    } else if (!characteristic?.value) {
-      console.log("No Data was recieved");
-      return -1;
-    }
-
-    const rawData = base64.decode(characteristic.value);
-    let innerHeartRate: number = -1;
-
-    const firstBitValue: number = Number(rawData) & 0x01;
-
-    if (firstBitValue === 0) {
-      innerHeartRate = rawData[1].charCodeAt(0);
-    } else {
-      innerHeartRate =
-        Number(rawData[1].charCodeAt(0) << 8) +
-        Number(rawData[2].charCodeAt(2));
-    }
-
-    setHeartRate(innerHeartRate);
-  };
-
-  const startStreamingData = async (device: Device) => {
-    if (device) {
-      device.monitorCharacteristicForService(
-        HEART_RATE_UUID,
-        HEART_RATE_CHARACTERISTIC,
-        onHeartRateUpdate
-      );
-    } else {
-      console.log("No Device Connected");
+      setDeviceName(null);
     }
   };
 
@@ -172,7 +195,8 @@ function useBLE(): BluetoothLowEnergyApi {
     allDevices,
     connectedDevice,
     disconnectFromDevice,
-    heartRate,
+    deviceName,
+    setAllDevices,
   };
 }
 
