@@ -20,13 +20,13 @@ This demo is isolated to show just the BLE workflow and navigation system, while
 
 ---
 
-## 🛠 Tech Stack
+## 🛠 Built Using
 
 - **React Native**
 - **TypeScript**
-- **Expo** or bare React Native
+- **Expo** 
 - **React Navigation**
-- **react-native-ble-plx** – BLE communication
+- **react-native-ble-plx**
 
 ---
 
