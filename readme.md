@@ -28,3 +28,19 @@ This demo is isolated to show just the BLE workflow and navigation system, while
 - **React Navigation**
 - **react-native-ble-plx** – BLE communication
 
+---
+
+## ⚙️ Build & Run
+
+Before running the app, make sure to install all dependencies:
+```
+npm install
+```
+Then, to build and run the app on a physical Android device using a custom development client:
+```
+cd android
+./gradlew assembleDebug
+adb -s <your-device-id> install -r app/build/outputs/apk/debug/app-debug.apk
+cd ..
+npx expo start --dev-client
+```
