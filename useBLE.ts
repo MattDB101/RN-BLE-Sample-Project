@@ -1,4 +1,3 @@
-/* eslint-disable no-bitwise */
 import { useMemo, useState } from "react";
 import { PermissionsAndroid, Platform, Alert } from "react-native";
 import {

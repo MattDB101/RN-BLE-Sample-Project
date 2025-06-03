@@ -1,4 +1,3 @@
-// screens/DeviceConnectionScreen.tsx
 import React, { useState } from "react";
 import {
   SafeAreaView,
