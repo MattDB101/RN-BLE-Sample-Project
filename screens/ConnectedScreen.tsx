@@ -9,10 +9,11 @@ import {
   useComputedValue,
 } from "@shopify/react-native-skia";
 import { Text, StyleSheet, TouchableOpacity, View } from "react-native";
+import { StatusBar } from "expo-status-bar";
 
 const ConnectedScreen = () => {
   const { deviceName, disconnectFromDevice } = useBLEContext();
-const navigation = useNavigation();
+  const navigation = useNavigation();
 
   const clock1 = useClockValue();
 
@@ -90,6 +91,7 @@ const styles = StyleSheet.create({
 
   return (
     <>
+     
       <View style={styles.animation}>
         <Canvas style={{ height: 300, width: 300 }}>
           <Circle cx={150} cy={150} r={50} opacity={1} color="#1066D8"></Circle>

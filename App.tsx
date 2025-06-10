@@ -3,10 +3,9 @@ import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 
 import { BLEProvider, useBLEContext } from "./BLEContext";
-import DeviceConnectionScreen from "./screens/DeviceConnectionScreen";
 import ConnectedScreen from "./screens/ConnectedScreen";
 import DrugLogScreen from "./screens/DrugLogScreen";
-import HomeScreen from "./screens/HomeScreen";
+import ConnectScreen from "./screens/ConnectScreen";
 
 const Stack = createNativeStackNavigator();
 
@@ -27,7 +26,7 @@ const Root = () => {
       {connectedDevice ? (
         <MainNavigation />
       ) : (
-        <HomeScreen />
+        <ConnectScreen />
       )}
     </NavigationContainer>
   );

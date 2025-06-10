@@ -5,9 +5,10 @@ import {
   Text,
   TouchableOpacity,
   View,
+  Modal
 } from "react-native";
 import { useBLEContext } from "../BLEContext";
-import DeviceModal from "./DeviceConnectionScreen";
+import DeviceConnectionModal from "./DeviceConnectionModal";
 import { useNavigation } from "@react-navigation/native";
 
 const HomeScreen = () => {
@@ -49,18 +50,29 @@ const HomeScreen = () => {
       <TouchableOpacity onPress={openModal} style={styles.ctaButton}>
           <Text style={styles.ctaButtonText}>Connect</Text>
       </TouchableOpacity>
-
-      <DeviceModal
-        closeModal={() => setIsModalVisible(false)}
-        visible={isModalVisible}
-        connectToPeripheral={handleConnect}
-        devices={allDevices}
-      />
+      <Modal 
+        visible={isModalVisible}       
+        style={styles.modalContainer}
+        animationType="slide"
+        transparent={false}
+      >
+        <DeviceConnectionModal
+          connectToPeripheral={handleConnect}
+          closeModal={() => setIsModalVisible(false)}
+          devices={allDevices}
+        />
+      </Modal>
     </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
+  modalContainer: {
+    flex: 1,
+    backgroundColor: "#f2f2f2",
+    paddingHorizontal: 20,
+    paddingTop: 40,
+  },
   container: {
     flex: 1,
     backgroundColor: "#f2f2f2",
